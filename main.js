@@ -36,8 +36,8 @@ class Taconnect extends utils.Adapter {
 
 		// The adapters config (in the instance object everything under the attribute "native") is accessible via
 		// this.config:
-		this.log.info("config option1: " + this.config.option1);
-		this.log.info("config option2: " + this.config.option2);
+		this.log.info("config ipadress: " + this.config.ipadress);
+		this.log.info("config login: " + this.config.cmi_username+"/"+this.config.cmi_password);
 
 		/*
 		For every state in the system there has to be also an object of type state
@@ -83,6 +83,26 @@ class Taconnect extends utils.Adapter {
 
 		result = await this.checkGroupAsync("admin", "admin");
 		this.log.info("check group user admin group admin: " + result);
+
+
+		var xmlhttp = new XMLHttpRequest();
+		var url = "http://"+this.config.cmi_username+":"+this.config.cmi_password+"@"+this.config.ipadress+"/INCLUDE/api.cgi?jsonnode=1&jsonparam=I,O,D";
+
+		xmlhttp.onreadystatechange = function() {
+			if (this.readyState == 4 && this.status == 200) {
+				var myArr = JSON.parse(this.responseText);
+				readCmiData(myArr);
+			}
+			else this.log.error("Could not connect to CMI ("+url+")");
+		};
+		xmlhttp.open("GET", url, true);
+		xmlhttp.send();
+
+
+	}
+
+	function readCmiData(arr) {
+		this.log.info("Status Code: "+arr.Status)
 	}
 
 	/**
