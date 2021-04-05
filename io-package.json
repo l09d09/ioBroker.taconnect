@@ -1,0 +1,76 @@
+{
+	"common": {
+		"name": "taconnect",
+		"version": "0.0.1",
+		"news": {
+			"0.0.1": {
+				"en": "initial release",
+				"de": "Erstveröffentlichung",
+				"ru": "Начальная версия",
+				"pt": "lançamento inicial",
+				"nl": "Eerste uitgave",
+				"fr": "Première version",
+				"it": "Versione iniziale",
+				"es": "Versión inicial",
+				"pl": "Pierwsze wydanie",
+				"zh-cn": "首次出版"
+			}
+		},
+		"title": "TAConnect",
+		"titleLang": {
+			"en": "TAConnect",
+			"de": "TAConnect",
+			"ru": "TAConnect",
+			"pt": "TAConnect",
+			"nl": "TAConnect",
+			"fr": "TAConnect",
+			"it": "TAConnect",
+			"es": "TAConnect",
+			"pl": "TAConnect",
+			"zh-cn": "TAConnect"
+		},
+		"desc": {
+			"en": "Reads datapoints from TA controllers",
+			"de": "Liest Datenpunkte von TA-Controllern",
+			"ru": "Считывает данные с контроллеров TA",
+			"pt": "Lê pontos de dados de controladores TA",
+			"nl": "Leest datapunten van TA-controllers",
+			"fr": "Lit les points de données des contrôleurs TA",
+			"it": "Legge i datapoint dai controller TA",
+			"es": "Lee puntos de datos de los controladores TA",
+			"pl": "Odczytuje punkty danych z kontrolerów TA",
+			"zh-cn": "从TA控制器读取数据点"
+		},
+		"authors": [
+			"l09d09 <l09d09@gmail.com>"
+		],
+		"keywords": [
+			"ta"
+		],
+		"license": "MIT",
+		"platform": "Javascript/Node.js",
+		"main": "main.js",
+		"icon": "taconnect.png",
+		"enabled": true,
+		"extIcon": "https://raw.githubusercontent.com/l09d09/ioBroker.taconnect/master/admin/taconnect.png",
+		"readme": "https://github.com/l09d09/ioBroker.taconnect/blob/master/README.md",
+		"loglevel": "info",
+		"mode": "daemon",
+		"type": "iot-systems",
+		"compact": true,
+		"connectionType": "local",
+		"dataSource": "poll",
+		"materialize": true,
+		"dependencies": [
+			{
+				"js-controller": ">=2.0.0"
+			}
+		]
+	},
+	"native": {
+		"option1": true,
+		"option2": "42"
+	},
+	"objects": [],
+	"instanceObjects": []
+}
