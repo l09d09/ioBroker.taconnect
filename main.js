@@ -7,7 +7,7 @@
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 const utils = require("@iobroker/adapter-core");
-var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+const bent = require("bent");
 // Load your modules here, e.g.:
 // const fs = require("fs");
 
@@ -83,22 +83,13 @@ class Taconnect extends utils.Adapter {
 
 		// result = await this.checkGroupAsync("admin", "admin");
 		// this.log.info("check group user admin group admin: " + result);
-
-
-		var xmlhttp = new XMLHttpRequest();
 		var url = "http://"+this.config.cmi_username+":"+this.config.cmi_password+"@"+this.config.ipadress+"/INCLUDE/api.cgi?jsonnode=1&jsonparam=I,O,D";
+		const getBuffer= bent("string");
+		const bufffer = await getBuffer(url);
+		data=JSON.parse(buffer);
+        adapter.log.debug("got response:"+ data);
 
-		xmlhttp.onreadystatechange = function() {
-			if (this.readyState == 4 && this.status == 200) {
-				var myArr = JSON.parse(this.responseText);
-				readCmiData(myArr);
-			}
-			else this.log.error("Could not connect to CMI ("+url+")");
-		};
-		xmlhttp.open("GET", url, true);
-		xmlhttp.send();
-
-
+		readCmiData(data);
 	}
 
 	readCmiData(arr) {
