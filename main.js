@@ -8,6 +8,7 @@
 // you need to create an adapter
 const utils = require("@iobroker/adapter-core");
 const bent = require("bent");
+const fetch = require('node-fetch');
 // Load your modules here, e.g.:
 // const fs = require("fs");
 
@@ -26,6 +27,51 @@ class Taconnect extends utils.Adapter {
 		// this.on("objectChange", this.onObjectChange.bind(this));
 		// this.on("message", this.onMessage.bind(this));
 		this.on("unload", this.onUnload.bind(this));
+
+
+		this.units=["",
+			"°C",
+			"W/m²", 
+			"l/h", 
+			"sek",
+			"min",
+			"l/Imp",
+			"K",
+			"%",
+			"kW",
+			"kWh",
+			"MWh",
+			"V",
+			"mA",
+			"Std",
+			"Tage",
+			"Imp",
+			"kΩ",
+			"l",
+			"km/h",
+			"Hz",
+			"l/min",
+			"bar",
+			"",
+			"km",
+			"m",
+			"mm",
+			"m³",
+			"l/d",
+			"m/s",
+			"m³/min",
+			"m³/h",
+			"m³/d",
+			"mm/min",
+			"mm/h",
+			"mm/d",
+			"Aus/EIN",
+			"NEIN/JA",
+			"°C",
+			"€",
+			"$"
+		];
+
 	}
 
 	/**
@@ -36,14 +82,14 @@ class Taconnect extends utils.Adapter {
 
 		// The adapters config (in the instance object everything under the attribute "native") is accessible via
 		// this.config:
-		this.log.info("config ipadress: " + this.config.ipadress);
-		this.log.info("config login: " + this.config.cmi_username+"/"+this.config.cmi_password);
+		//this.log.info("config ipadress: " + this.config.ipadress);
+		//this.log.info("config login: " + this.config.cmi_username+"/"+this.config.cmi_password);
 
-		// /*
-		// For every state in the system there has to be also an object of type state
-		// Here a simple template for a boolean variable named "testVariable"
-		// Because every adapter instance uses its own unique namespace variable names can't collide with other adapters variables
-		// */
+		/*
+		For every state in the system there has to be also an object of type state
+		Here a simple template for a boolean variable named "testVariable"
+		Because every adapter instance uses its own unique namespace variable names can't collide with other adapters variables
+		*/
 		// await this.setObjectNotExistsAsync("testVariable", {
 		// 	type: "state",
 		// 	common: {
@@ -83,17 +129,133 @@ class Taconnect extends utils.Adapter {
 
 		// result = await this.checkGroupAsync("admin", "admin");
 		// this.log.info("check group user admin group admin: " + result);
-		var url = "http://"+this.config.cmi_username+":"+this.config.cmi_password+"@"+this.config.ipadress+"/INCLUDE/api.cgi?jsonnode=1&jsonparam=I,O,D";
-		const getBuffer= bent("string");
-		const bufffer = await getBuffer(url);
-		data=JSON.parse(buffer);
-        adapter.log.debug("got response:"+ data);
+        //this.log.debug("got response:"+ data);
 
-		readCmiData(data);
+		var canids=this.readNodes();
+		for (var i=0; i<canids.length;i++){
+			this.writeObjects(this.readCmiData(canid), canid);
+		}
 	}
 
-	readCmiData(arr) {
-		this.log.info("Status Code: "+arr.Status)
+	async readNodes(){
+
+		
+
+
+		try{
+			const getString= bent("http://"+this.config.cmi_username+":"+this.config.cmi_password+"@"+this.config.ipadress, "string");
+			var resp = await getString("/INCLUDE/can_nodes.cgi");
+			//if (resp.status!=200) return [];
+			var canids=resp.split(";");
+			
+
+			var url="http://"+this.config.cmi_username+":"+this.config.cmi_password+"@"+this.config.ipadress+"/can_knoten.cgi?node=1";
+			url="http://www.google.at";
+//			.then(data=>{this.log.debug(data.toString())})
+			fetch(url)
+			.then(body=>{this.log.debug(body)})
+			.catch(err => {this.log.error(err)})
+			return [];
+
+			for (var i=0; i<canids.length-1;i++){
+				this.log.debug ("Reading canid: "+canids[i]);
+				resp = await getString("/can_knoten.cgi?node="+canids[i]);
+				resp=resp.replace(/[&\/\\#,+()$~%.'":*?<>{}]/g, "");
+				//var line=text.split("\n");
+				//this.log.debug(line[0]);
+				this.log.debug(resp.toString());
+				//this.log.debug(buffer.toString().replace(/(<([^>]+)>)/ig,"nope"));
+			}
+			return canids;
+		} 
+		catch (e){
+			this.log.error("readNodes error.");
+			this.log.error(e);
+			return [];
+		}
+	}
+
+	async readCmiData(canid) {
+		var url = "http://"+this.config.cmi_username+":"+this.config.cmi_password+"@"+this.config.ipadress+"/INCLUDE/api.cgi?jsonnode=1&jsonparam=I,O,D";
+		const getJson= bent("json");
+		return await getJson(url);
+	}
+
+	async writeObjects(arr, canid) {
+			this.log.info("Status Code: "+arr.Status);
+
+		// Inputs		
+		if (arr.Data.Inputs.length>0){
+			for (var i=0;i<arr.Data.Inputs.length;i++){
+				var obj=arr.Data.Inputs[i];
+				var name="Inputs."+obj.Number;
+				await this.setObjectNotExistsAsync(name, {
+					type: "state",
+					common: {
+						name: "S"+obj.Number,
+						type: (obj.AD==0 ? "number":"boolean"),
+						role: "value",
+						read: true,
+						write: false,
+						unit: this.units[obj.Value.Unit]
+					},
+					native: {},
+				});	
+				await this.setStateAsync(name, obj.Value.Value);
+			}
+			this.log.info("Adding "+arr.Data.Inputs.length+" inputs!");
+		}
+		else this.log.info("no inputs received!");
+
+		// Outputs		
+		if (arr.Data.Outputs.length>0){
+			for (var i=0;i<arr.Data.Outputs.length;i++){
+				var obj=arr.Data.Outputs[i];
+				var name="Outputs."+obj.Number;
+				await this.setObjectNotExistsAsync(name, {
+					type: "state",
+					common: {
+						name: "A"+obj.Number,
+						type: (obj.AD==0 ? "number":"boolean"),
+						role: "value",
+						read: true,
+						write: false,
+						unit: this.units[obj.Value.Unit]
+					},
+					native: {},
+				});	
+				await this.setStateAsync(name, obj.Value.Value);
+			}
+			this.log.info("Adding "+arr.Data.Outputs.length+" outputs!");
+		}
+		else this.log.info("no outputs received!");
+
+
+		// DL-Bus		
+		if (arr.Data["DL-Bus"].length>0){
+			for (var i=0;i<arr.Data["DL-Bus"].length;i++){
+				var obj=arr.Data["DL-Bus"][i];
+				if (!obj) continue;
+				var name="DL-Bus."+obj.Number;
+				await this.setObjectNotExistsAsync(name, {
+					type: "state",
+					common: {
+						name: "DL"+obj.Number,
+						type: (obj.AD=="A" ? "number":"boolean"),
+						role: "value",
+						read: true,
+						write: false,
+						unit: this.units[obj.Value.Unit]
+					},
+					native: {},
+				});	
+				await this.setStateAsync(name, obj.Value.Value);
+			}
+			this.log.info("Adding "+arr.Data["DL-Bus"].length+" DL-Bus!");
+		}
+		else this.log.info("no DL-Bus received!");
+
+
 	}
 
 	/**
