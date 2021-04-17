@@ -79,13 +79,6 @@ class Taconnect extends utils.Adapter {
 	 * Is called when databases are connected and adapter received configuration.
 	 */
 	async onReady() {
-		// Initialize your adapter here
-
-		// The adapters config (in the instance object everything under the attribute "native") is accessible via
-		// this.config:
-		//this.log.info("config ipadress: " + this.config.ipadress);
-		//this.log.info("config login: " + this.config.cmi_username+"/"+this.config.cmi_password);
-
 		/*
 		For every state in the system there has to be also an object of type state
 		Here a simple template for a boolean variable named "testVariable"
@@ -131,9 +124,16 @@ class Taconnect extends utils.Adapter {
 		// result = await this.checkGroupAsync("admin", "admin");
 		// this.log.info("check group user admin group admin: " + result);
         //this.log.debug("got response:"+ data);
+		var nodes=await this.getNodes();
 
-		//var canids=this.readNodes();
-		
+		for (var i=0; i<nodes.length;i++){
+			if (nodes[i]) await this.writeObjects(nodes[i]);
+		}
+
+		await setInterval(this.checkStatus, 10 * 1000);
+	}
+
+	async getNodes() {
 		const util = require('util');
 		const exec = util.promisify(require('child_process').exec);
 		
@@ -147,27 +147,47 @@ class Taconnect extends utils.Adapter {
 			return;
 		}
 		this.log.debug(`stdout: ${stdout}`);
-		var nodes=JSON.parse(stdout);
-		// exec("python3 python/main.py "+this.config.cmi_username+" "+this.config.cmi_password+" "+this.config.ipadress, (error, stdout, stderr) => {
-		// 	if (error) {
-		// 		this.log.error(`error: ${error.message}`);
-		// 		return;
-		// 	}
-		// 	if (stderr) {
-		// 		this.log.eror(`stderr: ${stderr}`);
-		// 		return;
-		// 	}
-		// 	this.log.debug(`stdout: ${stdout}`);
-		// 	nodes=JSON.stringify(stdout);
-		// });
+		return JSON.parse(stdout);
+	}
+
+	async checkStatus(){
+		const util = require('util');
+		const exec = util.promisify(require('child_process').exec);
+		
+		const {error, stdout, stderr } = await exec("python3 python/main.py "+this.config.cmi_username+" "+this.config.cmi_password+" "+this.config.ipadress);
+		if (error) {
+			this.log.error(`error: ${error.message}`);
+			return;
+		}
+		if (stderr) {
+			this.log.eror(`stderr: ${stderr}`);
+			return;
+		}
+		this.log.debug(`stdout: ${stdout}`);
+		return JSON.parse(stdout);
+
 
 		for (var i=0; i<nodes.length;i++){
-			if (nodes[i]) this.writeObjects(nodes[i]);
+			if (nodes[i]) {
+				await this.updateStates(nodes[i], "Inputs");
+				await this.updateStates(nodes[i], "Outputs");
+				await this.updateStates(nodes[i], "DL-Bus");
+			}
+		}
+		this.log.info("Updated TA nodes.");
+	}
+
+	async updateStates(node, name){
+		if (node.content.Data.Inputs.length>0){
+			for (var i=0;i<node.content.Data.Inputs.length;i++){
+				var obj=node.content.Data[name][i];
+				await this.setStateAsync(node.canid+"."+name+"."+obj.Number, obj.Value.Value);
+			}
 		}
 	}
 
 	async writeObjects(node) {
-
+		//Controller ertellen
 		await this.setObjectNotExistsAsync(node.canid, {
 			type: "state",
 			common: {
@@ -177,6 +197,34 @@ class Taconnect extends utils.Adapter {
 			},
 			native: {},
 		});	
+		
+		//Can ID 
+		await this.setObjectNotExistsAsync(node.canid+".CanID", {
+			type: "state",
+			common: {
+				name: "CanID",
+				type: "number",
+				role: "value",
+				read: true,
+				write: false,
+			},
+			native: {},
+		});	
+		await this.setStateAsync(node.canid+".CanID", node.canid);
+
+		//Controller Type
+		await this.setObjectNotExistsAsync(node.canid+".Typ", {
+			type: "state",
+			common: {
+				name: "Typ",
+				type: "string",
+				role: "value",
+				read: true,
+				write: false,
+			},
+			native: {},
+		});	
+		await this.setStateAsync(node.canid+".Typ", node.type);
 
 		var arr=node.content;
 		if (!arr) return;
