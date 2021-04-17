@@ -7,8 +7,9 @@
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 const utils = require("@iobroker/adapter-core");
-const bent = require("bent");
-const fetch = require('node-fetch');
+//const bent = require("bent");
+//const fetch = require('node-fetch');
+//const { exec } = require("child_process");
 // Load your modules here, e.g.:
 // const fs = require("fs");
 
@@ -131,64 +132,62 @@ class Taconnect extends utils.Adapter {
 		// this.log.info("check group user admin group admin: " + result);
         //this.log.debug("got response:"+ data);
 
-		var canids=this.readNodes();
-		for (var i=0; i<canids.length;i++){
-			this.writeObjects(this.readCmiData(canid), canid);
-		}
-	}
-
-	async readNodes(){
-
+		//var canids=this.readNodes();
 		
+		const util = require('util');
+		const exec = util.promisify(require('child_process').exec);
+		
+		const {error, stdout, stderr } = await exec("python3 python/main.py "+this.config.cmi_username+" "+this.config.cmi_password+" "+this.config.ipadress);
+		if (error) {
+			this.log.error(`error: ${error.message}`);
+			return;
+		}
+		if (stderr) {
+			this.log.eror(`stderr: ${stderr}`);
+			return;
+		}
+		this.log.debug(`stdout: ${stdout}`);
+		var nodes=JSON.parse(stdout);
+		// exec("python3 python/main.py "+this.config.cmi_username+" "+this.config.cmi_password+" "+this.config.ipadress, (error, stdout, stderr) => {
+		// 	if (error) {
+		// 		this.log.error(`error: ${error.message}`);
+		// 		return;
+		// 	}
+		// 	if (stderr) {
+		// 		this.log.eror(`stderr: ${stderr}`);
+		// 		return;
+		// 	}
+		// 	this.log.debug(`stdout: ${stdout}`);
+		// 	nodes=JSON.stringify(stdout);
+		// });
 
-
-		try{
-			const getString= bent("http://"+this.config.cmi_username+":"+this.config.cmi_password+"@"+this.config.ipadress, "string");
-			var resp = await getString("/INCLUDE/can_nodes.cgi");
-			//if (resp.status!=200) return [];
-			var canids=resp.split(";");
-			
-
-			var url="http://"+this.config.cmi_username+":"+this.config.cmi_password+"@"+this.config.ipadress+"/can_knoten.cgi?node=1";
-			url="http://www.google.at";
-//			.then(data=>{this.log.debug(data.toString())})
-			fetch(url)
-			.then(body=>{this.log.debug(body)})
-			.catch(err => {this.log.error(err)})
-			return [];
-
-			for (var i=0; i<canids.length-1;i++){
-				this.log.debug ("Reading canid: "+canids[i]);
-				resp = await getString("/can_knoten.cgi?node="+canids[i]);
-				resp=resp.replace(/[&\/\\#,+()$~%.'":*?<>{}]/g, "");
-				//var line=text.split("\n");
-				//this.log.debug(line[0]);
-				this.log.debug(resp.toString());
-				//this.log.debug(buffer.toString().replace(/(<([^>]+)>)/ig,"nope"));
-			}
-			return canids;
-		} 
-		catch (e){
-			this.log.error("readNodes error.");
-			this.log.error(e);
-			return [];
+		for (var i=0; i<nodes.length;i++){
+			if (nodes[i]) this.writeObjects(nodes[i]);
 		}
 	}
 
-	async readCmiData(canid) {
-		var url = "http://"+this.config.cmi_username+":"+this.config.cmi_password+"@"+this.config.ipadress+"/INCLUDE/api.cgi?jsonnode=1&jsonparam=I,O,D";
-		const getJson= bent("json");
-		return await getJson(url);
-	}
+	async writeObjects(node) {
 
-	async writeObjects(arr, canid) {
-			this.log.info("Status Code: "+arr.Status);
+		await this.setObjectNotExistsAsync(node.canid, {
+			type: "state",
+			common: {
+				name: node.name,
+				read: true,
+				write: false,
+			},
+			native: {},
+		});	
+
+		var arr=node.content;
+		if (!arr) return;
+
+		this.log.info("Status Code: "+arr.Status);
 
 		// Inputs		
 		if (arr.Data.Inputs.length>0){
 			for (var i=0;i<arr.Data.Inputs.length;i++){
 				var obj=arr.Data.Inputs[i];
-				var name="Inputs."+obj.Number;
+				var name=node.canid+".Inputs."+obj.Number;
 				await this.setObjectNotExistsAsync(name, {
 					type: "state",
 					common: {
@@ -211,7 +210,7 @@ class Taconnect extends utils.Adapter {
 		if (arr.Data.Outputs.length>0){
 			for (var i=0;i<arr.Data.Outputs.length;i++){
 				var obj=arr.Data.Outputs[i];
-				var name="Outputs."+obj.Number;
+				var name=node.canid+".Outputs."+obj.Number;
 				await this.setObjectNotExistsAsync(name, {
 					type: "state",
 					common: {
@@ -236,7 +235,7 @@ class Taconnect extends utils.Adapter {
 			for (var i=0;i<arr.Data["DL-Bus"].length;i++){
 				var obj=arr.Data["DL-Bus"][i];
 				if (!obj) continue;
-				var name="DL-Bus."+obj.Number;
+				var name=node.canid+".DL-Bus."+obj.Number;
 				await this.setObjectNotExistsAsync(name, {
 					type: "state",
 					common: {
@@ -254,8 +253,6 @@ class Taconnect extends utils.Adapter {
 			this.log.info("Adding "+arr.Data["DL-Bus"].length+" DL-Bus!");
 		}
 		else this.log.info("no DL-Bus received!");
-
-
 	}
 
 	/**
