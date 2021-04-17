@@ -28,7 +28,7 @@ class Taconnect extends utils.Adapter {
 		// this.on("objectChange", this.onObjectChange.bind(this));
 		// this.on("message", this.onMessage.bind(this));
 		this.on("unload", this.onUnload.bind(this));
-
+		this.loop=true;
 
 		this.units=["",
 			"°C",
@@ -130,7 +130,19 @@ class Taconnect extends utils.Adapter {
 			if (nodes[i]) await this.writeObjects(nodes[i]);
 		}
 
-		await setInterval(this.checkStatus, 10 * 1000);
+		while (this.loop){
+			this.log.debug("loop started");
+			await this.sleep(30);
+			await this.checkStatus();
+		}	
+	}
+
+	async sleep(seconds){
+		const date = Date.now();
+		let currentDate = null;
+		do {
+			currentDate = Date.now();
+		} while (currentDate - date < seconds*1000);
 	}
 
 	async getNodes() {
@@ -146,26 +158,13 @@ class Taconnect extends utils.Adapter {
 			this.log.eror(`stderr: ${stderr}`);
 			return;
 		}
-		this.log.debug(`stdout: ${stdout}`);
+		this.log.debug(`${stdout}`);
 		return JSON.parse(stdout);
 	}
 
 	async checkStatus(){
-		const util = require('util');
-		const exec = util.promisify(require('child_process').exec);
-		
-		const {error, stdout, stderr } = await exec("python3 python/main.py "+this.config.cmi_username+" "+this.config.cmi_password+" "+this.config.ipadress);
-		if (error) {
-			this.log.error(`error: ${error.message}`);
-			return;
-		}
-		if (stderr) {
-			this.log.eror(`stderr: ${stderr}`);
-			return;
-		}
-		this.log.debug(`stdout: ${stdout}`);
-		return JSON.parse(stdout);
-
+		var node= await this.getNodes();
+		this.log.info("Updated TA nodes.");
 
 		for (var i=0; i<nodes.length;i++){
 			if (nodes[i]) {
@@ -174,10 +173,14 @@ class Taconnect extends utils.Adapter {
 				await this.updateStates(nodes[i], "DL-Bus");
 			}
 		}
-		this.log.info("Updated TA nodes.");
 	}
 
 	async updateStates(node, name){
+		if (node.content["Status code"]==4) {
+			this.log.info(node.content.Status);
+			await this.sleep(30);
+			return;
+		}
 		if (node.content.Data.Inputs.length>0){
 			for (var i=0;i<node.content.Data.Inputs.length;i++){
 				var obj=node.content.Data[name][i];
@@ -187,6 +190,12 @@ class Taconnect extends utils.Adapter {
 	}
 
 	async writeObjects(node) {
+		if (node.content["Status code"]==4) {
+			this.log.info(node.content.Status);
+			await this.sleep(30);
+			return;
+		}
+
 		//Controller ertellen
 		await this.setObjectNotExistsAsync(node.canid, {
 			type: "state",
@@ -228,8 +237,6 @@ class Taconnect extends utils.Adapter {
 
 		var arr=node.content;
 		if (!arr) return;
-
-		this.log.info("Status Code: "+arr.Status);
 
 		// Inputs		
 		if (arr.Data.Inputs.length>0){
@@ -314,7 +321,7 @@ class Taconnect extends utils.Adapter {
 			// clearTimeout(timeout2);
 			// ...
 			// clearInterval(interval1);
-
+			this.loop=false;
 			callback();
 		} catch (e) {
 			callback();
