@@ -24,47 +24,47 @@ let ip, baseurl, apiver, requestType;
 let isConnected = null;
 
 
-const units=["",
-"°C",
-"W/m²", 
-"l/h", 
-"sek",
-"min",
-"l/Imp",
-"K",
-"%",
-"kW",
-"kWh",
-"MWh",
-"V",
-"mA",
-"Std",
-"Tage",
-"Imp",
-"kΩ",
-"l",
-"km/h",
-"Hz",
-"l/min",
-"bar",
-"",
-"km",
-"m",
-"mm",
-"m³",
-"l/d",
-"m/s",
-"m³/min",
-"m³/h",
-"m³/d",
-"mm/min",
-"mm/h",
-"mm/d",
-"Aus/EIN",
-"NEIN/JA",
-"°C",
-"€",
-"$"
+const units = ["",
+	"°C",
+	"W/m²",
+	"l/h",
+	"sek",
+	"min",
+	"l/Imp",
+	"K",
+	"%",
+	"kW",
+	"kWh",
+	"MWh",
+	"V",
+	"mA",
+	"Std",
+	"Tage",
+	"Imp",
+	"kΩ",
+	"l",
+	"km/h",
+	"Hz",
+	"l/min",
+	"bar",
+	"",
+	"km",
+	"m",
+	"mm",
+	"m³",
+	"l/d",
+	"m/s",
+	"m³/min",
+	"m³/h",
+	"m³/d",
+	"mm/min",
+	"mm/h",
+	"mm/d",
+	"Aus/EIN",
+	"NEIN/JA",
+	"°C",
+	"€",
+	"$"
 ];
 
 // you have to call the adapter function and pass a options object
@@ -72,93 +72,95 @@ const units=["",
 // adapter will be restarted automatically every time as the configuration changed, e.g system.adapter.template.0
 let adapter;
 function startAdapter(options) {
-    options = options || {};
-    Object.assign(options, {
-        name: 'taconnect',
-        undload: function (callback) {
-            // is called when adapter shuts down - callback has to be called under any circumstances!
-            try {
-                adapter.log.info('cleaned everything up...');
-                callback();
-            } catch (e) {
-                callback();
-            }
-        },
-        objectChange: function (id, obj) {
-            // is called if a subscribed object changes
-            adapter.log.info('objectChange ' + id + ' ' + JSON.stringify(obj));
-        },
-        stateChange: function (id, state) {
-            // is called if a subscribed state changes
-            // Warning, state can be null if it was deleted
-            adapter.log.info('stateChange ' + id + ' ' + JSON.stringify(state));
+	options = options || {};
+	Object.assign(options, {
+		name: 'taconnect',
+		undload: function (callback) {
+			// is called when adapter shuts down - callback has to be called under any circumstances!
+			try {
+				adapter.log.info('cleaned everything up...');
+				callback();
+			} catch (e) {
+				callback();
+			}
+		},
+		objectChange: function (id, obj) {
+			// is called if a subscribed object changes
+			adapter.log.info('objectChange ' + id + ' ' + JSON.stringify(obj));
+		},
+		stateChange: function (id, state) {
+			// is called if a subscribed state changes
+			// Warning, state can be null if it was deleted
+			adapter.log.info('stateChange ' + id + ' ' + JSON.stringify(state));
 
-            // you can use the ack flag to detect if it is status (true) or command (false)
-            if (state && !state.ack) {
-                adapter.log.info('ack is not set!');
-            }
-        },
-        // message: function (obj) {
-        //     // Some message was sent to adapter instance over message box. Used by email, pushover, text2speech, ...
-        //     let wait = false;
-        //     if (obj) {
-        //         switch (obj.command) {
-        //             case 'checkIP':
-        //                 checkIP(obj.message, function (res) {
-        //                     if (obj.callback)
-        //                         adapter.sendTo(obj.from, obj.command, JSON.stringify(res), obj.callback);
-        //                 });
-        //                 wait = true;
-        //                 break;
-        //             case 'getDeviceInfo':
-        //                 getActiveDeviceInfo("System", obj.message, function (res) {
-        //                     if (obj.callback)
-        //                         adapter.sendTo(obj.from, obj.command, JSON.stringify(res), obj.callback);
-        //                 });
-        //                 wait = true;
-        //                 break;
-        //             case 'getDeviceInfoInverter':
-        //                 getActiveDeviceInfo("Inverter", obj.message, function (res) {
-        //                     if (obj.callback)
-        //                         adapter.sendTo(obj.from, obj.command, JSON.stringify(res), obj.callback);
-        //                 });
-        //                 wait = true;
-        //                 break;
-        //             case 'getDeviceInfoSensor':
-        //                 getActiveDeviceInfo("SensorCard", obj.message, function (res) {
-        //                     if (obj.callback)
-        //                         adapter.sendTo(obj.from, obj.command, JSON.stringify(res), obj.callback);
-        //                 });
-        //                 wait = true;
-        //                 break;
-        //             case 'getDeviceInfoString':
-        //                 getActiveDeviceInfo("StringControl", obj.message, function (res) {
-        //                     if (obj.callback)
-        //                         adapter.sendTo(obj.from, obj.command, JSON.stringify(res), obj.callback);
-        //                 });
-        //                 wait = true;
-        //                 break;
-        //             default:
-        //                 adapter.log.warn("Unknown command: " + obj.command);
-        //                 break;
-        //         }
-        //     }
-        //     if (!wait && obj.callback) {
-        //         adapter.sendTo(obj.from, obj.command, obj.message, obj.callback);
-        //     }
-        //     return true;
-        // },
-        ready: main
-    });
-    adapter = new utils.Adapter(options);
+			// you can use the ack flag to detect if it is status (true) or command (false)
+			if (state && !state.ack) {
+				adapter.log.info('ack is not set!');
+			}
+		},
+		// message: function (obj) {
+		//     // Some message was sent to adapter instance over message box. Used by email, pushover, text2speech, ...
+		//     let wait = false;
+		//     if (obj) {
+		//         switch (obj.command) {
+		//             case 'checkIP':
+		//                 checkIP(obj.message, function (res) {
+		//                     if (obj.callback)
+		//                         adapter.sendTo(obj.from, obj.command, JSON.stringify(res), obj.callback);
+		//                 });
+		//                 wait = true;
+		//                 break;
+		//             case 'getDeviceInfo':
+		//                 getActiveDeviceInfo("System", obj.message, function (res) {
+		//                     if (obj.callback)
+		//                         adapter.sendTo(obj.from, obj.command, JSON.stringify(res), obj.callback);
+		//                 });
+		//                 wait = true;
+		//                 break;
+		//             case 'getDeviceInfoInverter':
+		//                 getActiveDeviceInfo("Inverter", obj.message, function (res) {
+		//                     if (obj.callback)
+		//                         adapter.sendTo(obj.from, obj.command, JSON.stringify(res), obj.callback);
+		//                 });
+		//                 wait = true;
+		//                 break;
+		//             case 'getDeviceInfoSensor':
+		//                 getActiveDeviceInfo("SensorCard", obj.message, function (res) {
+		//                     if (obj.callback)
+		//                         adapter.sendTo(obj.from, obj.command, JSON.stringify(res), obj.callback);
+		//                 });
+		//                 wait = true;
+		//                 break;
+		//             case 'getDeviceInfoString':
+		//                 getActiveDeviceInfo("StringControl", obj.message, function (res) {
+		//                     if (obj.callback)
+		//                         adapter.sendTo(obj.from, obj.command, JSON.stringify(res), obj.callback);
+		//                 });
+		//                 wait = true;
+		//                 break;
+		//             default:
+		//                 adapter.log.warn("Unknown command: " + obj.command);
+		//                 break;
+		//         }
+		//     }
+		//     if (!wait && obj.callback) {
+		//         adapter.sendTo(obj.from, obj.command, obj.message, obj.callback);
+		//     }
+		//     return true;
+		// },
+		ready: main
+	});
+	adapter = new utils.Adapter(options);
 
-    return adapter;
+	return adapter;
 }
 
-function checkStatus(nodes){
-	if (!nodes) nodes= getNodes();
+function checkStatus(nodes) {
+	if (!nodes) nodes = getNodes();
 
-	for (var i=0; i<nodes.length;i++){
+	if (nodes[0].content["Status code"] == 4) return;
+
+	for (var i = 0; i < nodes.length; i++) {
 		if (nodes[i]) {
 			updateStates(nodes[i], "Inputs");
 			updateStates(nodes[i], "Outputs");
@@ -168,63 +170,61 @@ function checkStatus(nodes){
 	if (nodes.length) adapter.log.info("Updated TA nodes.");
 }
 
-function updateStates(node, name){
+function updateStates(node, name) {
 	if (!node) return
-	if (node.content["Status code"]==4) {
+	if (node.content["Status code"] == 4) {
 		//TOO MANY REQUESTS -> wait 30 sec
 		adapter.log.info(node.content.Status);
 		sleep(30);
 	}
-	if (node.content.Data[name].length>0){
-		for (var i=0;i<node.content.Data.Inputs.length;i++){
-			var obj=node.content.Data[name][i];
-			adapter.setState(node.canid+"."+name+"."+obj.Number, {val: obj.Value.Value, ack: true} );
+	if (node.content.Data[name].length > 0) {
+		for (var i = 0; i < node.content.Data.Inputs.length; i++) {
+			var obj = node.content.Data[name][i];
+			adapter.setState(node.canid + "." + name + "." + obj.Number, { val: obj.Value.Value, ack: true });
 		}
-		adapter.log.debug("Updating "+name+" Objects.");
+		adapter.log.debug("Updating " + name + " Objects.");
 	}
 }
 
-async function getNodes() {
-	const util = require('util');
-	const exec = util.promisify(require('child_process').exec);
-	const command = "python3 python/main.py "+adapter.config.cmi_username+" "+adapter.config.cmi_password+" "+adapter.config.ipadress;
-	
-	const {error, stdout, stderr } = await exec(command);
-	if (error) {
-		adapter.log.error(`error: ${error.message}`);
-		return;
+function getNodes() {
+	const command = "python3 " + __dirname + "/python/main.py " + adapter.config.cmi_username + " " + adapter.config.cmi_password + " " + adapter.config.ipadress;
+	const execSync = require('child_process').execSync;
+	const output = execSync(command, { encoding: 'utf-8' });
+	try {
+		return JSON.parse(output);
 	}
-	if (stderr) {
-		adapter.log.eror(`stderr: ${stderr}`);
-		return;
-	}
-	//adapter.log.debug(`response: ${stdout}`);
-	try{
-		return JSON.parse(stdout);
-	} 
-	catch(SyntaxError){
+	catch (SyntaxError) {
 		adapter.log.error("Couldn't read Json");
 		return [];
 	}
 }
 
-function createObjects(){
-	var nodes=getNodes();
-	adapter.log.debug("Creating Objects.");
-	for (var i=0; i<nodes.length;i++){
+function createObjects() {
+	var nodes = getNodes();
+	if (nodes.length) adapter.log.debug("Creating Objects.");
+	else adapter.log.error("no nodes received!");
+	for (var i = 0; i < nodes.length; i++) {
 		if (nodes[i]) writeObjects(nodes[i]);
 	}
-	checkStatus(nodes)
+	checkStatus(nodes);
+}
+
+function sleep(seconds) {
+	const date = Date.now();
+	let currentDate = null;
+	do {
+		currentDate = Date.now();
+	} while (currentDate - date < seconds * 1000);
 }
 
 function writeObjects(node) {
-	if (node.content["Status code"]==4) {
+	if (node.content["Status code"] == 4) {
 		//TOO MANY REQUESTS -> wait 30 sec
 		adapter.log.info(node.content.Status);
 		sleep(30);
 		return;
 	}
-
+	adapter.log.debug("Writing Device " + node.canid);
 	//Controller ertellen
 	adapter.setObjectNotExists(node.canid, {
 		type: "device",
@@ -234,10 +234,10 @@ function writeObjects(node) {
 			write: false,
 		},
 		native: {},
-	});	
-	
+	});
+
 	//Can ID 
-	adapter.setObjectNotExists(node.canid+".CanID", {
+	adapter.setObjectNotExists(node.canid + ".CanID", {
 		type: "state",
 		common: {
 			name: "CanID",
@@ -247,11 +247,11 @@ function writeObjects(node) {
 			write: false,
 		},
 		native: {},
-	});	
-	adapter.setStat(node.canid+".CanID", node.canid);
+	});
+	adapter.setState(node.canid + ".CanID", { val: node.canid, ack: true });
 
 	//Controller Type
-	adapter.setObjectNotExists(node.canid+".Typ", {
+	adapter.setObjectNotExists(node.canid + ".Typ", {
 		type: "state",
 		common: {
 			name: "Typ",
@@ -261,112 +261,115 @@ function writeObjects(node) {
 			write: false,
 		},
 		native: {},
-	});	
-	adapter.setState(node.canid+".Typ", node.type);
+	});
+	adapter.setState(node.canid + ".Typ", { val: node.type, ack: true });
 
-	var arr=node.content;
+	var arr = node.content;
 	if (!arr) return;
 
 	// Inputs		
-	if (arr.Data.Inputs.length>0){
-		for (var i=0;i<arr.Data.Inputs.length;i++){
-			var obj=arr.Data.Inputs[i];
-			var name=node.canid+".Inputs."+obj.Number;
+	if (arr.Data.Inputs.length > 0) {
+		for (var i = 0; i < arr.Data.Inputs.length; i++) {
+			var obj = arr.Data.Inputs[i];
+			var name = node.canid + ".Inputs." + obj.Number;
 			adapter.setObjectNotExists(name, {
 				type: "state",
 				common: {
-					name: "S"+obj.Number,
-					type: (obj.AD==0 ? "number":"boolean"),
-					role: (obj.AD==0 ? "value":"switch"),
+					name: "S" + obj.Number,
+					type: (obj.AD == 0 ? "number" : "boolean"),
+					role: (obj.AD == 0 ? "value" : "switch"),
 					read: true,
 					write: false,
 					unit: units[obj.Value.Unit]
 				},
 				native: {},
-			});	
+			});
+			adapter.setState(name, { val: obj.Value.Value, ack: true });
 		}
-		adapter.log.info("Adding "+arr.Data.Inputs.length+" inputs!");
+		adapter.log.info("Adding " + arr.Data.Inputs.length + " inputs!");
 	}
 	else adapter.log.info("no inputs received!");
 
 	// Outputs		
-	if (arr.Data.Outputs.length>0){
-		for (var i=0;i<arr.Data.Outputs.length;i++){
-			var obj=arr.Data.Outputs[i];
-			var name=node.canid+".Outputs."+obj.Number;
+	if (arr.Data.Outputs.length > 0) {
+		for (var i = 0; i < arr.Data.Outputs.length; i++) {
+			var obj = arr.Data.Outputs[i];
+			var name = node.canid + ".Outputs." + obj.Number;
 			adapter.setObjectNotExists(name, {
 				type: "state",
 				common: {
-					name: "A"+obj.Number,
-					type: (obj.AD==0 ? "number":"boolean"),
+					name: "A" + obj.Number,
+					type: (obj.AD == 0 ? "number" : "boolean"),
 					role: "value",
 					read: true,
 					write: false,
 					unit: units[obj.Value.Unit]
 				},
 				native: {},
-			});	
+			});
+			adapter.setState(name, { val: obj.Value.Value, ack: true });
 		}
-		adapter.log.info("Adding "+arr.Data.Outputs.length+" outputs!");
+		adapter.log.info("Adding " + arr.Data.Outputs.length + " outputs!");
 	}
 	else adapter.log.info("no outputs received!");
 
 
 	// DL-Bus		
-	if (arr.Data["DL-Bus"].length>0){
-		for (var i=0;i<arr.Data["DL-Bus"].length;i++){
-			var obj=arr.Data["DL-Bus"][i];
+	if (arr.Data["DL-Bus"].length > 0) {
+		for (var i = 0; i < arr.Data["DL-Bus"].length; i++) {
+			var obj = arr.Data["DL-Bus"][i];
 			if (!obj) continue;
-			var name=node.canid+".DL-Bus."+obj.Number;
+			var name = node.canid + ".DL-Bus." + obj.Number;
 			adapter.setObjectNotExists(name, {
 				type: "state",
 				common: {
-					name: "DL"+obj.Number,
-					type: (obj.AD=="A" ? "number":"boolean"),
+					name: "DL" + obj.Number,
+					type: (obj.AD == "A" ? "number" : "boolean"),
 					role: "value",
 					read: true,
 					write: false,
 					unit: units[obj.Value.Unit]
 				},
 				native: {},
-			});	
+			});
+			adapter.setState(name, { val: obj.Value.Value, ack: true });
 		}
-		adapter.log.info("Adding "+arr.Data["DL-Bus"].length+" DL-Bus!");
+		adapter.log.info("Adding " + arr.Data["DL-Bus"].length + " DL-Bus!");
 	}
 	else adapter.log.info("no DL-Bus received!");
 }
 
 function main() {
 
-    // The adapters config (in the instance object everything under the attribute "native") is accessible via
-    // adapter.config:
+	// The adapters config (in the instance object everything under the attribute "native") is accessible via
+	// adapter.config:
 
-    var ip = adapter.config.ipadress;
-	var username=adapter.config.cmi_username;
-	var password=adapter.config.cmi_password;
+	var ip = adapter.config.ipadress;
+	var username = adapter.config.cmi_username;
+	var password = adapter.config.cmi_password;
 
-    if (ip && username && password) {
+	if (ip && username && password) {
 
-        createObjects();
+		createObjects();
 
-        let secs = adapter.config.cmi_poll;
-        if (isNaN(secs) || secs < 1) {
-            secs = 30;
-        }
+		let secs = adapter.config.cmi_poll;
+		if (isNaN(secs) || secs < 1) {
+			secs = 30;
+		}
 
-        setInterval(checkStatus, secs * 1000);
+		setInterval(checkStatus, secs * 1000);
 
-    } else {
-        adapter.log.error("Please configure the Taconnect adapter");
-    }
+	} else {
+		adapter.log.error("Please configure the Taconnect adapter");
+	}
 
 
 }
 
 // If started as allInOne/compact mode => return function to create instance
 if (module && module.parent) {
-    module.exports = startAdapter;
+	module.exports = startAdapter;
 } else {
-    // or start the instance directly
-    startAdapter();
-} 
+	// or start the instance directly
+	startAdapter();
+}
