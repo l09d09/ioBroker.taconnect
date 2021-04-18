@@ -167,7 +167,7 @@ function checkStatus(nodes) {
 			updateStates(nodes[i], "DL-Bus");
 		}
 	}
-	if (nodes.length) adapter.log.info("Updated TA nodes.");
+	if (nodes.length) adapter.log.debug("Updated TA nodes.");
 }
 
 function updateStates(node, name) {
