@@ -174,13 +174,13 @@ function updateStates(node, name){
 		//TOO MANY REQUESTS -> wait 30 sec
 		adapter.log.info(node.content.Status);
 		sleep(30);
-		return;
 	}
 	if (node.content.Data[name].length>0){
 		for (var i=0;i<node.content.Data.Inputs.length;i++){
 			var obj=node.content.Data[name][i];
 			adapter.setState(node.canid+"."+name+"."+obj.Number, {val: obj.Value.Value, ack: true} );
 		}
+		adapter.log.debug("Updating "+name+" Objects.");
 	}
 }
 
@@ -188,8 +188,7 @@ async function getNodes() {
 	const util = require('util');
 	const exec = util.promisify(require('child_process').exec);
 	const command = "python3 python/main.py "+adapter.config.cmi_username+" "+adapter.config.cmi_password+" "+adapter.config.ipadress;
-	adapter.log.info(command);
-
+	
 	const {error, stdout, stderr } = await exec(command);
 	if (error) {
 		adapter.log.error(`error: ${error.message}`);
@@ -199,7 +198,7 @@ async function getNodes() {
 		adapter.log.eror(`stderr: ${stderr}`);
 		return;
 	}
-	adapter.log.debug(`response: ${stdout}`);
+	//adapter.log.debug(`response: ${stdout}`);
 	try{
 		return JSON.parse(stdout);
 	} 
@@ -211,7 +210,7 @@ async function getNodes() {
 
 function createObjects(){
 	var nodes=getNodes();
-
+	adapter.log.debug("Creating Objects.");
 	for (var i=0; i<nodes.length;i++){
 		if (nodes[i]) writeObjects(nodes[i]);
 	}
